@@ -228,9 +228,11 @@ func (c *Cassandra) Run(migration io.Reader) error {
 }
 
 func (c *Cassandra) SetVersion(version int, dirty bool) error {
-	query := `TRUNCATE "` + c.config.MigrationsTable + `"`
-	if err := c.session.Query(query).Exec(); err != nil {
-		return &database.Error{OrigErr: err, Query: []byte(query)}
+	if version > 1 {
+		query := `DELETE FROM "` + c.config.MigrationsTable + `" where version=` + strconv.Itoa(version-1)
+		if err := c.session.Query(query).Exec(); err != nil {
+			return &database.Error{OrigErr: err, Query: []byte(query)}
+		}
 	}
 
 	// Also re-write the schema version for nil dirty versions to prevent
